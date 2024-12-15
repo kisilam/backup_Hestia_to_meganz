@@ -1,0 +1,49 @@
+#!/bin/bash
+
+#Script copy a ones at week a last exist backup
+#from server with HESTIACP to the backup storage on the Mega.nz
+#using MEGAcmd tool running on the docker container
+
+#Autor Andrii Kisil <kisilams@gmail.com>
+
+#Mega.nz credentials
+MEGALOGIN="admin@example.com"
+MEGAPASS="examplepassword"
+
+#Mega.nz folder for backups
+BACKUPDIRA="/MEGAsync/backups/firsFolder"
+BACKUPDIRB="/MEGAsync/backups/secondFolder"
+BACKUPDIRC="/MEGAsync/backups/threadFolder"
+
+#Local HESTIACP backup folder
+BACKUPL="/backup"
+
+#Container name
+nameCONT="meganz"
+
+#Getting what backup will be copy to the Mega.nz
+userwebaBACKUP=$(ls -lr $BACKUPL | grep "first.*.tar" | head -1 | awk '{ print$9 }')
+indicatorBACKUP=$(ls -lr $BACKUPL | grep "secind.*.tar" | head -1 | awk '{ print$9 }')
+officehamsterBACKUP=$(ls -lr $BACKUPL | grep "threed.*.tar" | head -1 | awk '{ print$9 }')
+
+#echo $indicatorBACKUP
+#echo $userwebaBACKUP
+#Start container with Mega.nz
+docker start $nameCONT
+
+#Trying login in the Mega.nz account
+docker exec $nameCONT bash -c "mega-login $MEGALOGIN $MEGAPASS"
+
+#Delete all files on the remote folder on the Mega.nz
+docker exec $nameCONT bash -c "mega-rm $BACKUPDIRA/*.*; mega-rm $BACKUPDIRB/*.*; mega-rm $BACKUPDIRC/*.*"
+
+#Copy HESTIACP backup to the Mega.nz folder
+docker exec $nameCONT bash -c "mega-put $BACKUPL/$indicatorBACKUP $BACKUPDIRA"
+docker exec $nameCONT bash -c "mega-put $BACKUPL/$userwebaBACKUP $BACKUPDIRB"
+docker exec $nameCONT bash -c "mega-put $BACKUPL/$officehamsterBACKUP $BACKUPDIRC"
+
+#Logout from Mega.nz
+docker exec $nameCONT bash -c "mega-logout"
+
+#Stop container
+docker stop $nameCONT
